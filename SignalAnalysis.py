@@ -48,11 +48,8 @@ class Signal():
 		"""
 		from scipy.signal import resample
 		if TargetFreq is not None:
-			downsamplingFactor = TargetFreq/self.fsample
-			resample_num = int(self.Signal.shape[1]*downsamplingFactor)
-
-		if self.Signal.shape[1] < resample_num:
-			raise Exception('Target sample size should be smaller than original frequency')
+			resamplingFactor = TargetFreq/self.fsample
+			resample_num = int(self.Signal.shape[1]*resamplingFactor)
 		
 		# Resample
 		re_signal = resample(self.Signal, num=resample_num, axis=-1)
@@ -61,12 +58,12 @@ class Signal():
 		self.Signal = re_signal
 
 		# Reevaluate Sampling Frequency
-		downsamplingFactor = resample_num / self.TimePoints
-		self.fsample = self.fsample * downsamplingFactor
+		resamplingFactor = resample_num / self.TimePoints
+		self.fsample = self.fsample * resamplingFactor
 		self.NumberRegions, self.TimePoints = self.Signal.shape
 		return self.Signal
 
-	def getFC(self, Limits, conn_mode):
+	def getEnvFC(self, Limits, conn_mode):
 		"""
 		Computes the Functional Connectivity Matrix based on the signal envelope
 		Takes settings from configuration File. If conn_mode contains 
@@ -176,7 +173,7 @@ class Signal():
 	def getCCD(self, Limits, DownFreq=5):
 		""" Defines the Coherence Connectivity Dynamics following the description of Deco et. al 2017
 		:param signal: numpy ndarray containing the signal envelope
-		:return: numpy nd array containing the CCD matrix
+		:return: numpy nd array containing the CCD matrix, histogram and midpoints of histogramm bins
 		"""
 		envelope = self.getEnvelope(Limits=Limits)
 		# Demean envelope
@@ -224,14 +221,4 @@ class Signal():
 		ccd = np.matmul(v.T, v)
 		ccd /= v_norm 
 		ccd = ccd.T / v_norm 
-		return ccd 
-	
-	def _smooth_mat(self, mat, width):
-		"""
-		Takes mean of valuew in windows with fixed width.
-		"""
-		mat = mat[:,:width*int(mat.shape[1]//width)]
-		re_mat = mat.reshape(-1, int(mat.shape[1]/width), width)
-		mean_mat = np.mean(re_mat, axis=-1)
-		return mean_mat
-		
+		return ccd 		
